@@ -1,11 +1,8 @@
 require("dotenv").config();
 
+
+//const dbConnection = require("./database/config");
 const Server = require("./models/server");
-
-//midleware
-
-
-
 
 const server = new Server;
 
