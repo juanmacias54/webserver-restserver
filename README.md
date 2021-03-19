@@ -1,2 +1,3 @@
-Servidor Web - Rest-Server 
-Ejecutar comando "npm.install" para creacion del .json 
+# WebServer + RestServer
+
+Recuerden que deben de ejecutar ```npm install``` para reconstruir los módulos de Node.

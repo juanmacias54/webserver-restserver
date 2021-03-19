@@ -1,41 +1,37 @@
-const Role = require("../models/role");
-const Usuario = require("../models/usuario");
+const Role = require('../models/role');
+const Usuario = require('../models/usuario');
 
-// Valida Rol
-const esRolValido = async (rol = "") => {
-  const existeRol = await Role.findOne({ rol });
-  if (!existeRol) {
-    throw new Error(`El rol  '${rol}' no existe`);
-  }
-};
+const esRoleValido = async(rol = '') => {
 
-//Valida Correo
-const esEmailValido = async (correo = "") => {
-  const existeEmail = await Usuario.findOne({ correo });
-  
-  if (existeEmail) {
-    throw new Error(`El email '${correo}' ya fue registrado!!!!`); 
-  }
-};
+    const existeRol = await Role.findOne({ rol });
+    if ( !existeRol ) {
+        throw new Error(`El rol ${ rol } no está registrado en la BD`);
+    }
+}
 
-//Valida Usuario
-const esIdValido = async (id) => {
-  const existeId = await Usuario.findById(id);
-  if (!existeId) {
-    throw new Error(`El Usuario '${id}' no existe!!!!`, existeId);
-  }
-};
-//Valida Usuario Delete
-const esIdValidoDel = async (id) => {
-  const existeId = await Usuario.findById(id,{estado:false});
-  if (existeId ) {
-    throw new Error(`El Usuario '${id}' ya estaba inactivo!!!!`,);
-  }
-};
+const emailExiste = async( correo = '' ) => {
+
+    // Verificar si el correo existe
+    const existeEmail = await Usuario.findOne({ correo });
+    if ( existeEmail ) {
+        throw new Error(`El correo: ${ correo }, ya está registrado`);
+    }
+}
+
+const existeUsuarioPorId = async( id ) => {
+
+    // Verificar si el correo existe
+    const existeUsuario = await Usuario.findById(id);
+    if ( !existeUsuario ) {
+        throw new Error(`El id no existe ${ id }`);
+    }
+}
+
+
 
 module.exports = {
-  esRolValido,
-  esEmailValido,
-  esIdValido,
-  esIdValidoDel,
-};
+    esRoleValido,
+    emailExiste,
+    existeUsuarioPorId
+}
+

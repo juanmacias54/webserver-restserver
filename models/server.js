@@ -1,44 +1,60 @@
-const express = require("express");
-const cors = require("cors");
-const { router } = require("../routes/user");
-const { json } = require("express");
-const dbConnection = require("../database/config");
+const express = require('express');
+const cors = require('cors');
+
+const { dbConnection } = require('../database/config');
 
 class Server {
-  constructor() {
-    this.app = express();
-    this.port = process.env.PORT;
-    this.userPath = "/api/user";
 
-    this.middleware();
-    this.routes();
-    this.listen();
-    this.conectarDB();
-  }
-  routes() {
-    this.app.use(this.userPath, require("../routes/user"));
-  }
-  listen() {
-    this.app.listen(this.port);
-    console.log("Escuchando por el puerto", this.port);
-  }
+    constructor() {
+        this.app  = express();
+        this.port = process.env.PORT;
 
-  middleware() {
-    //Lectura y Parseo .Json
-    this.app.use(express.json());
+        this.usuariosPath = '/api/usuarios';
+        this.authPath     = '/api/auth';
 
-    //Directorio Publico
-    this.app.use(express.static("public"));
+        // Conectar a base de datos
+        this.conectarDB();
 
-    // CORS
-    this.app.use(cors());
-  }
+        // Middlewares
+        this.middlewares();
 
-  //Connection Base de Datos
+        // Rutas de mi aplicación
+        this.routes();
+    }
+
     async conectarDB() {
-    await dbConnection();
-  }
-  
+        await dbConnection();
+    }
+
+
+    middlewares() {
+
+        // CORS
+        this.app.use( cors() );
+
+        // Lectura y parseo del body
+        this.app.use( express.json() );
+
+        // Directorio Público
+        this.app.use( express.static('public') );
+
+    }
+
+    routes() {
+        
+        this.app.use( this.authPath, require('../routes/auth'));
+        this.app.use( this.usuariosPath, require('../routes/usuarios'));
+    }
+
+    listen() {
+        this.app.listen( this.port, () => {
+            console.log('Servidor corriendo en puerto', this.port );
+        });
+    }
+
 }
+
+
+
 
 module.exports = Server;
