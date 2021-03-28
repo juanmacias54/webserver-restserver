@@ -46,7 +46,18 @@ const existeProductoPorId = async (id) => {
   }
 };
 
+/**
+ * Colecciones Permitidas
+ */
+const coleccionesPermitidas = (coleccion='',colecciones = [])=>{
+  if (!colecciones.includes(coleccion)) {
+    throw new Error(`Coleccion: '${coleccion}' no existe. Solo se permite: '${colecciones}'`);
+  }
+  return true;
+};
+
 module.exports = {
+  coleccionesPermitidas,
   esRoleValido,
   emailExiste,
   existeUsuarioPorId,

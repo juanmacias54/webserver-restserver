@@ -1,42 +1,177 @@
 const { request, response } = require("express");
-const { v4: uuidv4 } = require("uuid");
+const { subirArchivo } = require("../helpers/");
+const { Usuario, Producto } = require("../models");
 const path = require("path");
+const fs = require("fs-extra");
+const cloudinary = require("cloudinary").v2;
+cloudinary.config(process.env.CLOUDINARY_URL);
 
-const cargarArchivo = (req = request, res = response) => {
-  if (!req.files || Object.keys(req.files).length === 0) {
-    res.status(400).json({ msg: "No se selecionaron archivos a cargar!!!" });
-    return;
-  }
-
-  const { archivo } = req.files;
-  const nombreCortado = archivo.name.split(".");
-  const extencion = nombreCortado[nombreCortado.length - 1];
-  extencionesValidas = ["gif", "jpg", "img", "bmp", "png", "tiff"];
-  nombreArchivo = uuidv4()+`.${extencion}`;
-  
-  if (!extencionesValidas.includes(extencion)) {
-    res
-      .status(400)
-      .json({
-        msg: `tipo de archivo '.${extencion}' no valido, solo tipo '${extencionesValidas}'`,
-      });
-    return;
-  }
-  //const path =  + `/../uploads/${archivo.name}`;
-  const uploadPath = path.join(__dirname, "../uploads/", nombreArchivo);
-
-  archivo.mv(uploadPath, function (err) {
-    if (err) {
-      res.status(500).json({ err });
-      return;
-    }
-
+const cargarArchivo = async (req = request, res = response) => {
+  try {
+    const nombre = await subirArchivo(req.files, undefined, "imgs");
     res.status(200).json({
-      msg: "archivo cargado  " + nombreArchivo,
+      msg: nombre,
     });
-  });
+  } catch (msg) {
+    res.status(400).json({
+      msg,
+    });
+  }
+};
+
+const actualizarImagen = async (req, res = response) => {
+  const { id, coleccion } = req.params;
+
+  let modelo;
+
+  switch (coleccion) {
+    case "usuarios":
+      modelo = await Usuario.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un usuario con el id ${id}`,
+        });
+      }
+
+      break;
+
+    case "productos":
+      modelo = await Producto.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un producto con el id ${id}`,
+        });
+      }
+
+      break;
+
+    default:
+      return res.status(500).json({ msg: "Se me olvidó validar esto" });
+  }
+
+  // Limpiar imágenes previas
+  if (modelo.img) {
+    // Hay que borrar la imagen del servidor
+    const pathImagen = path.join(
+      __dirname,
+      "../uploads",
+      coleccion,
+      modelo.img
+    );
+    if (fs.existsSync(pathImagen)) {
+      fs.unlinkSync(pathImagen);
+    }
+  }
+
+  const nombre = await subirArchivo(req.files, undefined, coleccion);
+  modelo.img = nombre;
+
+  await modelo.save();
+
+  res.json(modelo);
+};
+const actualizarImagenClaudinary = async (req, res = response) => {
+  const { id, coleccion } = req.params;
+
+  let modelo;
+
+  switch (coleccion) {
+    case "usuarios":
+      modelo = await Usuario.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un usuario con el id ${id}`,
+        });
+      }
+
+      break;
+
+    case "productos":
+      modelo = await Producto.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un producto con el id ${id}`,
+        });
+      }
+
+      break;
+
+    default:
+      return res.status(500).json({ msg: "Se me olvidó validar esto" });
+  }
+
+  // Limpiar imágenes previas
+  if (modelo.img) {
+    // Hay que borrar la imagen del servidor
+    const modeloArr = modelo.img.split('/');
+    nombre = modeloArr[modeloArr.length-1];
+    const [public_id] = nombre.split('.');
+    cloudinary.uploader.destroy(public_id);
+  }
+
+  const { tempFilePath } = req.files.archivo;
+  const { secure_url } = await cloudinary.uploader.upload(tempFilePath);
+
+  //   const nombre = await subirArchivo(req.files, undefined, coleccion);
+  modelo.img = secure_url;
+
+  await modelo.save();
+
+  res.json(modelo);
+};
+
+const mostrarImagen = async (req = request, res = response) => {
+  const { id, coleccion } = req.params;
+
+  let modelo;
+
+  switch (coleccion) {
+    case "usuarios":
+      modelo = await Usuario.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un usuario con el id ${id}`,
+        });
+      }
+
+      break;
+
+    case "productos":
+      modelo = await Producto.findById(id);
+      if (!modelo) {
+        return res.status(400).json({
+          msg: `No existe un producto con el id ${id}`,
+        });
+      }
+
+      break;
+
+    default:
+      return res.status(500).json({ msg: "Se me olvidó validar esto" });
+  }
+
+  // Limpiar imágenes previas
+  if (modelo.img) {
+    // Hay que borrar la imagen del servidor
+    const pathImagen = path.join(
+      __dirname,
+      "../uploads",
+      coleccion,
+      modelo.img
+    );
+    if (fs.existsSync(pathImagen)) {
+      return res.sendFile(pathImagen);
+    }
+  }
+
+  pathImagen = path.join(__dirname, "../uploads/noImg/", "no-image.jpg");
+
+  res.sendFile(pathImagen);
 };
 
 module.exports = {
   cargarArchivo,
+  actualizarImagen,
+  mostrarImagen,
+  actualizarImagenClaudinary,
 };
